@@ -1,0 +1,30 @@
+name: bootstrap
+on:
+  push:
+    branches: [ci-bootstrap]
+permissions:
+  contents: write
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Dependencies
+        run: mvn -B -q -f pom.xml dependency:copy-dependencies -DoutputDirectory=$PWD/out/libs
+      - name: Modrinth list
+        run: python3 modrinth.py out/modrinth.tsv
+      - name: Paper server
+        run: bash paper.sh
+      - name: Publish output branch
+        run: |
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git checkout --orphan ci-output
+          git rm -rf -q --cached .
+          git add -f out
+          git commit -q -m "ci output"
+          git push -f origin ci-output
